@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
     openjdk-11-jdk \
     zip \
     unzip \
-    clang-format
+    clang-format \
+    psmisc
 
 # Install Bazelisk
 RUN curl -Lo /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-arm64 \

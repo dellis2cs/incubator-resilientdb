@@ -80,3 +80,15 @@ done
 
 python3 ${CONFIG_TOOLS_BIN} ./server.config ./server.config.json ${TEMPLATE_PATH}
 mv server.config.json server.config
+
+python3 - ./client.config <<'EOF'
+import json, sys
+data = {"replicaInfo": []}
+with open(sys.argv[1]) as f:
+    for line in f:
+        parts = line.split()
+        if len(parts) >= 3:
+            data["replicaInfo"].append({"id": int(parts[0]), "ip": parts[1], "port": int(parts[2])})
+with open(sys.argv[1], "w") as f:
+    json.dump(data, f)
+EOF
