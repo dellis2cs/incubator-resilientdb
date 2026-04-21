@@ -24,6 +24,7 @@
 #include "platform/consensus/execution/duplicate_manager.h"
 #include "platform/consensus/ordering/pbft/message_manager.h"
 #include "platform/consensus/ordering/pbft/response_manager.h"
+#include "platform/consensus/ordering/pbft/two_phase_commit.h"
 #include "platform/networkstrate/replica_communicator.h"
 #include "platform/statistic/stats.h"
 
@@ -48,6 +49,7 @@ class Commitment {
 
   void SetPreVerifyFunc(std::function<bool(const Request& request)> func);
   void SetNeedCommitQC(bool need_qc);
+  void SetTwoPhaseCommit(TwoPhaseCommit* two_phase_commit);
 
   std::queue<std::pair<std::unique_ptr<Context>, std::unique_ptr<Request>>>
       request_complained_;
@@ -71,6 +73,7 @@ class Commitment {
 
   std::function<bool(const Request& request)> pre_verify_func_;
   bool need_qc_ = false;
+  TwoPhaseCommit* two_phase_commit_ = nullptr;
 
   std::mutex mutex_;
   std::map<uint64_t,

@@ -163,6 +163,22 @@ bool MessageManager::MayConsensusChangeStatus(
             std::memory_order_acq_rel, std::memory_order_acq_rel);
       }
       break;
+    case Request::TYPE_2PC_COMMIT: {
+      // 2PC commit decision: bypass quorum, jump directly to READY_EXECUTE.
+      TransactionStatue old_prepare = TransactionStatue::READY_PREPARE;
+      //If the status is old_prepare, which we expect to be READY_PREPARE then swap it with READY_EXECUTE
+      if (status->compare_exchange_strong(old_prepare,
+                                          TransactionStatue::READY_EXECUTE,
+                                          std::memory_order_acq_rel,
+                                          std::memory_order_acq_rel)) {
+        return true;
+      }
+      TransactionStatue old_commit = TransactionStatue::READY_COMMIT;
+      return status->compare_exchange_strong(old_commit,
+                                             TransactionStatue::READY_EXECUTE,
+                                             std::memory_order_acq_rel,
+                                             std::memory_order_acq_rel);
+    }
   }
   return ret;
 }
@@ -205,7 +221,7 @@ CollectorResultCode MessageManager::AddConsensusMsg(
     return CollectorResultCode::INVALID;
   }
   if (resp_received_count > 0) {
-    if (type == Request::TYPE_COMMIT) {
+    if (type == Request::TYPE_COMMIT || type == Request::TYPE_2PC_COMMIT) {
       if (checkpoint_manager_) {
         checkpoint_manager_->AddCommitState(seq);
       }

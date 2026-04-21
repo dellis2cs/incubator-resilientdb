@@ -98,12 +98,27 @@ cc_library(
 )
 
 cc_library(
+    name = "two_phase_commit",
+    srcs = ["two_phase_commit.cpp"],
+    hdrs = ["two_phase_commit.h"],
+    deps = [
+        ":message_manager",
+        ":transaction_utils",
+        "//platform/config:resdb_config",
+        "//platform/networkstrate:replica_communicator",
+        "//platform/networkstrate:server_comm",
+        "//platform/proto:resdb_cc_proto",
+    ],
+)
+
+cc_library(
     name = "commitment",
     srcs = ["commitment.cpp"],
     hdrs = ["commitment.h"],
     deps = [
         ":message_manager",
         ":response_manager",
+        ":two_phase_commit",
         "//common/utils",
         "//platform/common/queue:batch_queue",
         "//platform/config:resdb_config",
@@ -248,6 +263,7 @@ cc_library(
         ":message_manager",
         ":performance_manager",
         ":query",
+        ":two_phase_commit",
         ":viewchange_manager",
         "//common/crypto:signature_verifier",
         "//platform/consensus/recovery",

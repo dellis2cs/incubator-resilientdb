@@ -62,6 +62,10 @@ void Commitment::SetPreVerifyFunc(
 
 void Commitment::SetNeedCommitQC(bool need_qc) { need_qc_ = need_qc; }
 
+void Commitment::SetTwoPhaseCommit(TwoPhaseCommit* two_phase_commit) {
+  two_phase_commit_ = two_phase_commit;
+}
+
 // Handle the user request and send a pre-prepare message to others.
 // TODO if not a primary, redicet to the primary replica.
 int Commitment::ProcessNewRequest(std::unique_ptr<Context> context,
@@ -137,15 +141,12 @@ int Commitment::ProcessNewRequest(std::unique_ptr<Context> context,
 
   global_stats_->RecordStateTime("request");
 
-  user_request->set_type(Request::TYPE_PRE_PREPARE);
   user_request->set_current_view(message_manager_->GetCurrentView());
   user_request->set_seq(*seq);
   user_request->set_sender_id(config_.GetSelfInfo().id());
   user_request->set_primary_id(config_.GetSelfInfo().id());
 
-  replica_communicator_->BroadCast(*user_request);
-
-  return 0;
+  return two_phase_commit_->InitiateCommit(std::move(user_request));
 }
 
 // Receive the pre-prepare message from the primary.

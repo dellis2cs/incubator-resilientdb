@@ -56,15 +56,57 @@ while [ $SECONDS -lt 100 ]; do
 done
 
 echo ""
-echo "===== THROUGHPUT (txn/s per replica, last 5 readings at t=100s) ====="
+echo "===== 2PC THROUGHPUT SUMMARY ====="
+
+echo ""
+echo "--- Coordinator (Replica 1) ---"
+grep "\[2PC Throughput\]\[Coordinator\]" bench_server0.log | tail -1
+
+echo ""
+echo "--- Participants ---"
 for i in 0 1 2 3; do
-  echo "--- Replica $((i+1)) (bench_server${i}.log) ---"
-  grep "txn:" bench_server${i}.log | tail -5
+  grep "\[2PC Throughput\]\[Participant" bench_server${i}.log | tail -1
 done
 
 echo ""
-echo "===== CLIENT/PROXY LATENCY (last 5 readings at t=100s) ====="
+echo "===== 2PC THROUGHPUT (txn/s) — last 5 active windows per replica ====="
+for i in 0 1 2 3; do
+  echo "--- Replica $((i+1)) ---"
+  grep "txn:" bench_server${i}.log | grep -v "txn:0" | tail -5
+done
+
+echo ""
+echo "===== LATENCY (last 5 readings) ====="
 grep "req client latency:" bench_client.log | tail -5
+
+echo ""
+echo "===== FINAL NUMBERS FOR REPORT ====="
+
+# Coordinator throughput from our 2PC logger
+COORD_LINE=$(grep "\[2PC Throughput\]\[Coordinator\]" bench_server0.log | tail -1)
+COORD_TP=$(echo "$COORD_LINE" | grep -oP 'throughput=\K[0-9.]+')
+echo "Coordinator throughput : ${COORD_TP} txn/s"
+
+# Average participant throughput
+TOTAL=0
+COUNT=0
+for i in 0 1 2 3; do
+  TP=$(grep "\[2PC Throughput\]\[Participant" bench_server${i}.log | tail -1 | grep -oP 'throughput=\K[0-9.]+')
+  if [ -n "$TP" ]; then
+    TOTAL=$(awk "BEGIN {print $TOTAL + $TP}")
+    COUNT=$((COUNT + 1))
+  fi
+done
+if [ $COUNT -gt 0 ]; then
+  AVG_TP=$(awk "BEGIN {printf \"%.4f\", $TOTAL / $COUNT}")
+  echo "Avg participant throughput: ${AVG_TP} txn/s  (across $COUNT participants)"
+fi
+
+# Average latency
+AVG_LAT=$(grep "req client latency:" bench_client.log \
+  | grep -oP 'latency:\K[0-9.]+' \
+  | awk '{s+=$1; c++} END {if(c>0) printf "%.6f", s/c}')
+echo "Avg client latency     : ${AVG_LAT} s  ($(awk "BEGIN {printf \"%.4f\", ${AVG_LAT:-0} * 1000}") ms)"
 
 echo ""
 echo "=== Done ==="

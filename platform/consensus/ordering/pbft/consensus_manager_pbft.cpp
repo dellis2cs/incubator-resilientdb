@@ -37,6 +37,8 @@ ConsensusManagerPBFT::ConsensusManagerPBFT(
       message_manager_(std::make_unique<MessageManager>(
           config, std::move(executor), checkpoint_manager_.get(),
           system_info_.get())),
+      two_phase_commit_(std::make_unique<TwoPhaseCommit>(
+          config_, message_manager_.get(), GetBroadCastClient())),
       commitment_(std::make_unique<Commitment>(config_, message_manager_.get(),
                                                GetBroadCastClient(),
                                                GetSignatureVerifier())),
@@ -62,6 +64,7 @@ ConsensusManagerPBFT::ConsensusManagerPBFT(
             << config_.IsPerformanceRunning();
   global_stats_ = Stats::GetGlobalStats();
 
+  commitment_->SetTwoPhaseCommit(two_phase_commit_.get());
   view_change_manager_->SetDuplicateManager(commitment_->GetDuplicateManager());
 
   recovery_->ReadLogs(
@@ -271,6 +274,15 @@ int ConsensusManagerPBFT::InternalConsensusCommit(
     case Request::TYPE_RECOVERY_DATA_RESP:
       return ProcessRecoveryDataResponse(std::move(context),
                                          std::move(request));
+    case Request::TYPE_2PC_PREPARE:
+      return two_phase_commit_->ProcessPrepare(std::move(context),
+                                               std::move(request));
+    case Request::TYPE_2PC_VOTE:
+      return two_phase_commit_->ProcessVote(std::move(context),
+                                            std::move(request));
+    case Request::TYPE_2PC_COMMIT:
+      return two_phase_commit_->ProcessCommit(std::move(context),
+                                              std::move(request));
   }
   return 0;
 }

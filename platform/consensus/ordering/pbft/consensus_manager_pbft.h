@@ -27,6 +27,7 @@
 #include "platform/consensus/ordering/pbft/performance_manager.h"
 #include "platform/consensus/ordering/pbft/query.h"
 #include "platform/consensus/ordering/pbft/response_manager.h"
+#include "platform/consensus/ordering/pbft/two_phase_commit.h"
 #include "platform/consensus/ordering/pbft/viewchange_manager.h"
 #include "platform/consensus/recovery/recovery.h"
 #include "platform/networkstrate/consensus_manager.h"
@@ -79,6 +80,7 @@ class ConsensusManagerPBFT : public ConsensusManager {
   std::unique_ptr<SystemInfo> system_info_;
   std::unique_ptr<CheckPointManager> checkpoint_manager_;
   std::unique_ptr<MessageManager> message_manager_;
+  std::unique_ptr<TwoPhaseCommit> two_phase_commit_;
   std::unique_ptr<Commitment> commitment_;
   std::unique_ptr<Query> query_;
   std::unique_ptr<ResponseManager> response_manager_;
